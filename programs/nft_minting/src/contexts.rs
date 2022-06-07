@@ -214,46 +214,10 @@ pub struct MintNFT<'info> {
     /// CHECK: This is not dangerous because we don't read or write from this account
     pub master_edition: UncheckedAccount<'info>,
 
-    #[account(
-    constraint = config.owner == program_owner.key(),
-    )]
-    /// CHECK: This is not dangerous because we don't read or write from this account
-    pub program_owner: AccountInfo<'info>,
-
     ///used by anchor for init of the token
     #[account(address = mpl_token_metadata::id())]
     /// CHECK: This is not dangerous because we don't read or write from this account
     pub token_metadata_program: UncheckedAccount<'info>,
-    pub system_program: Program<'info, System>,
-    pub token_program: Program<'info, Token>,
-    pub rent: Sysvar<'info, Rent>,
-}
-
-
-#[derive(Accounts)]
-#[instruction(_token_type: u8)]
-pub struct MintNFTOld<'info> {
-    #[account(mut)]
-    pub mint_authority: Signer<'info>,
-
-    /// CHECK: This is not dangerous because we don't read or write from this account
-    #[account(mut)]
-    pub mint: UncheckedAccount<'info>,
-    /// CHECK: This is not dangerous because we don't read or write from this account
-    #[account(mut)]
-    pub metadata: UncheckedAccount<'info>,
-    /// CHECK: This is not dangerous because we don't read or write from this account
-    #[account(mut)]
-    pub token_account: UncheckedAccount<'info>,
-    /// CHECK: This is not dangerous because we don't read or write from this account
-    pub token_metadata_program: UncheckedAccount<'info>,
-    /// CHECK: This is not dangerous because we don't read or write from this account
-    #[account(mut)]
-    pub payer: AccountInfo<'info>,
-    /// CHECK: This is not dangerous because we don't read or write from this account
-    #[account(mut)]
-    pub master_edition: UncheckedAccount<'info>,
-
     pub system_program: Program<'info, System>,
     pub token_program: Program<'info, Token>,
     pub rent: Sysvar<'info, Rent>,

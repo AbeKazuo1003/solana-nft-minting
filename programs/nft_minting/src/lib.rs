@@ -10,13 +10,13 @@ use crate::utils::*;
 use crate::{constants::*};
 
 use anchor_lang::prelude::*;
-use anchor_spl::token::{self, Transfer, Token, MintTo};
+use anchor_spl::token::{self, Transfer, MintTo};
 use anchor_lang::solana_program::program::{invoke, invoke_signed};
 use anchor_lang::solana_program::system_instruction::transfer;
 use mpl_token_metadata::instruction::{create_master_edition_v3, create_metadata_accounts_v2};
 use crate::models::{Config, ConfigLine};
 
-declare_id!("76TQpMtLx1u3aZmwaQH7M5U3DnL3un22w6F3aw4dFcer");
+declare_id!("88CsVn4yER3wiikkzahig99y4otV4gXWto1AVFhwp9Bb");
 
 #[program]
 pub mod nft_minting {
@@ -176,20 +176,27 @@ pub mod nft_minting {
         msg!("Token Minted !!!");
 
         let creator = vec![
+            //NFT Collection
+            mpl_token_metadata::state::Creator {
+                address: config.to_account_info().key(),
+                verified: true,
+                share: 0,
+            },
             // NFT art creator
             mpl_token_metadata::state::Creator {
                 address: config.creator,
                 verified: false,
                 share: 100,
             },
-            //NFT Collection
-            mpl_token_metadata::state::Creator {
-                address: config.owner,
-                verified: true,
-                share: 0,
-            },
         ];
         msg!("Creator Assigned");
+
+        let config_line = get_config_line(&config)?;
+        let authority_seeds = [
+            CONFIG_PDA_SEED.as_ref(),
+            name_seed(&_nft_type),
+            &[config.nonce],
+        ];
 
         let metadata_infos = vec![
             ctx.accounts.metadata.to_account_info(),
@@ -200,32 +207,18 @@ pub mod nft_minting {
             ctx.accounts.token_program.to_account_info(),
             ctx.accounts.system_program.to_account_info(),
             ctx.accounts.rent.to_account_info(),
+            config.to_account_info(),
         ];
         msg!("Account Info Assigned");
 
-        let master_edition_infos = vec![
-            ctx.accounts.master_edition.to_account_info(),
-            ctx.accounts.mint.to_account_info(),
-            ctx.accounts.owner.to_account_info(),
-            ctx.accounts.owner.to_account_info(),
-            ctx.accounts.metadata.to_account_info(),
-            ctx.accounts.token_metadata_program.to_account_info(),
-            ctx.accounts.token_program.to_account_info(),
-            ctx.accounts.system_program.to_account_info(),
-            ctx.accounts.rent.to_account_info(),
-        ];
-        msg!("Master Edition Account Infos Assigned");
-
-        let config_line = get_config_line(&config)?;
-
-        invoke(
+        invoke_signed(
             &create_metadata_accounts_v2(
                 ctx.accounts.token_metadata_program.key(),
                 ctx.accounts.metadata.key(),
                 ctx.accounts.mint.key(),
                 ctx.accounts.owner.key(),
                 ctx.accounts.owner.key(),
-                ctx.accounts.program_owner.key(),
+                config.key(),
                 config_line.name,
                 config.symbol.clone(),
                 config_line.uri,
@@ -237,122 +230,41 @@ pub mod nft_minting {
                 None,
             ),
             metadata_infos.as_slice(),
+            &[&authority_seeds],
         )?;
         msg!("Metadata Account Created !!!");
-        invoke(
+
+        let master_edition_infos = vec![
+            ctx.accounts.master_edition.to_account_info(),
+            ctx.accounts.mint.to_account_info(),
+            ctx.accounts.owner.to_account_info(),
+            ctx.accounts.owner.to_account_info(),
+            ctx.accounts.metadata.to_account_info(),
+            ctx.accounts.token_metadata_program.to_account_info(),
+            ctx.accounts.token_program.to_account_info(),
+            ctx.accounts.system_program.to_account_info(),
+            ctx.accounts.rent.to_account_info(),
+            config.to_account_info(),
+        ];
+        msg!("Master Edition Account Infos Assigned");
+        invoke_signed(
             &create_master_edition_v3(
                 ctx.accounts.token_metadata_program.key(),
                 ctx.accounts.master_edition.key(),
                 ctx.accounts.mint.key(),
-                ctx.accounts.program_owner.key(),
+                config.key(),
                 ctx.accounts.owner.key(),
                 ctx.accounts.metadata.key(),
                 ctx.accounts.owner.key(),
                 Some(0),
             ),
             master_edition_infos.as_slice(),
+            &[&authority_seeds],
         )?;
         msg!("Master Edition Nft Minted !!!");
 
         //update config
         config.supply += 1;
-
-        Ok(())
-    }
-
-    pub fn mint_nft_old(
-        ctx: Context<MintNFTOld>,
-        _nft_type: String,
-        _token_type: String,
-        /*creator_key: Pubkey,
-        uri: String,
-        title: String,*/
-    ) -> Result<()> {
-        msg!("Initializing Mint Ticket");
-        let cpi_accounts = MintTo {
-            mint: ctx.accounts.mint.to_account_info(),
-            to: ctx.accounts.token_account.to_account_info(),
-            authority: ctx.accounts.payer.to_account_info(),
-        };
-        msg!("CPI Accounts Assigned");
-        let cpi_program = ctx.accounts.token_program.to_account_info();
-        msg!("CPI Program Assigned");
-        let cpi_ctx = CpiContext::new(cpi_program, cpi_accounts);
-        msg!("CPI Context Assigned");
-        token::mint_to(cpi_ctx, 1)?;
-        msg!("Token Minted !!!");
-        /*let account_info = vec![
-            ctx.accounts.metadata.to_account_info(),
-            ctx.accounts.mint.to_account_info(),
-            ctx.accounts.mint_authority.to_account_info(),
-            ctx.accounts.payer.to_account_info(),
-            ctx.accounts.token_metadata_program.to_account_info(),
-            ctx.accounts.token_program.to_account_info(),
-            ctx.accounts.system_program.to_account_info(),
-            ctx.accounts.rent.to_account_info(),
-        ];
-        msg!("Account Info Assigned");
-        let creator = vec![
-            mpl_token_metadata::state::Creator {
-                address: creator_key,
-                verified: false,
-                share: 100,
-            },
-            mpl_token_metadata::state::Creator {
-                address: ctx.accounts.mint_authority.key(),
-                verified: false,
-                share: 0,
-            },
-        ];
-        msg!("Creator Assigned");
-        let symbol = std::string::ToString::to_string("symb");
-        invoke(
-            &create_metadata_accounts_v2(
-                ctx.accounts.token_metadata_program.key(),
-                ctx.accounts.metadata.key(),
-                ctx.accounts.mint.key(),
-                ctx.accounts.mint_authority.key(),
-                ctx.accounts.payer.key(),
-                ctx.accounts.payer.key(),
-                title,
-                symbol,
-                uri,
-                Some(creator),
-                1,
-                true,
-                false,
-                None,
-                None,
-            ),
-            account_info.as_slice(),
-        )?;
-        msg!("Metadata Account Created !!!");
-        let master_edition_infos = vec![
-            ctx.accounts.master_edition.to_account_info(),
-            ctx.accounts.mint.to_account_info(),
-            ctx.accounts.mint_authority.to_account_info(),
-            ctx.accounts.payer.to_account_info(),
-            ctx.accounts.metadata.to_account_info(),
-            ctx.accounts.token_metadata_program.to_account_info(),
-            ctx.accounts.token_program.to_account_info(),
-            ctx.accounts.system_program.to_account_info(),
-            ctx.accounts.rent.to_account_info(),
-        ];
-        msg!("Master Edition Account Infos Assigned");
-        invoke(
-            &create_master_edition_v3(
-                ctx.accounts.token_metadata_program.key(),
-                ctx.accounts.master_edition.key(),
-                ctx.accounts.mint.key(),
-                ctx.accounts.payer.key(),
-                ctx.accounts.mint_authority.key(),
-                ctx.accounts.metadata.key(),
-                ctx.accounts.payer.key(),
-                Some(0),
-            ),
-            master_edition_infos.as_slice(),
-        )?;
-        msg!("Master Edition Nft Minted !!!");*/
 
         Ok(())
     }
@@ -362,8 +274,8 @@ pub fn get_config_line(
     config: &Account<'_, Config>
 ) -> Result<ConfigLine> {
     Ok(ConfigLine {
-        name: config.token_name.clone() + "#" + &(config.supply).to_string(),
-        uri: config.uri.clone() + "/" + &config.prefix.clone() + &(config.supply).to_string(),
+        name: config.token_name.clone() + " #" + &(config.supply).to_string(),
+        uri: config.uri.clone() + "/" + &config.prefix.clone() + &(config.supply).to_string() + ".json",
     })
 }
 

@@ -10,15 +10,6 @@ import {
   TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
 
-/*const {
-    Token,
-    TOKEN_PROGRAM_ID,
-    createAssociatedTokenAccountInstruction,
-    getAssociatedTokenAddress,
-    createInitializeMintInstruction,
-    MINT_SIZE
-} = require("@solana/spl-token");*/
-
 const utils = require("./utils");
 import * as fs from "fs";
 import * as assert from "assert";
@@ -68,7 +59,7 @@ describe("nft_minting", () => {
 
     // Airdrop 10 SOL to user
     await provider.connection.confirmTransaction(
-      await provider.connection.requestAirdrop(user.publicKey, 10_000_000_000),
+      await provider.connection.requestAirdrop(user.publicKey, 1_000_000_000),
       "confirmed"
     );
 
@@ -270,7 +261,6 @@ describe("nft_minting", () => {
           metadata: metadataAddress,
           masterEdition: masterEdition,
           tokenMetadataProgram: TOKEN_METADATA_PROGRAM_ID,
-          programOwner: wallet.publicKey,
           systemProgram: anchor.web3.SystemProgram.programId,
           tokenProgram: TOKEN_PROGRAM_ID,
           rent: anchor.web3.SYSVAR_RENT_PUBKEY,

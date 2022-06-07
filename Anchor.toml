@@ -1,10 +1,10 @@
 [features]
 seeds = false
 [programs.localnet]
-nft_minting = "76TQpMtLx1u3aZmwaQH7M5U3DnL3un22w6F3aw4dFcer"
+nft_minting = "88CsVn4yER3wiikkzahig99y4otV4gXWto1AVFhwp9Bb"
 
 [programs.devnet]
-nft_minting = "76TQpMtLx1u3aZmwaQH7M5U3DnL3un22w6F3aw4dFcer"
+nft_minting = "88CsVn4yER3wiikkzahig99y4otV4gXWto1AVFhwp9Bb"
 
 [registry]
 url = "https://anchor.projectserum.com"
